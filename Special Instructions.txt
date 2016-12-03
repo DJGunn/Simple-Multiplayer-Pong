@@ -1,0 +1,18 @@
+Because I'm using the windows API, this code will only run properly on a windows machine.
+
+For the server time synchronization to work, you must manually open the clock on the server system, 'change date and time settings', then navigate to 'internet time'. There click 'change settings' followed by 'update now'.
+
+This is required to turn on the system's time update protocol and only needs to be done once per cold boot of the machine. This is required because microsoft changed the service to default to 'off' instead of 'on' due to accusations of using the service to mine personal data from people's machines.
+
+In addition, once you compile the program, you cannot run it from windows visual studio, you must find the executable in the debug folder of the project and right click -> run as administrator. This is because the time protocal is invoked by this server code, and requires administrator priviledges to run properly.
+
+Sorry for the hassle, but it's required.
+
+-Devon
+
+
+How my latency Mitigation works:
+
+I am using the same technique used in Blizzard's World of Warcraft:
+
+When the player's paddle is moving, I invisibly increase the size of their hit-box on the server without increasing the size of the paddle's visible area, which compensates for the latency fairly accurately in ranges from 0-40 MS

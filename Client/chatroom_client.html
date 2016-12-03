@@ -1,0 +1,254 @@
+<!--Team Members: Devon Gunn; ID# 28502436-->
+<!doctype html>
+<html>
+<head>
+	<meta charset='UTF-8' />
+	<style>
+		input, textarea {border:1px solid #CCC;margin:0px;padding:0px}
+
+        #ip {line-height:20px}
+        #port {line-height:20px}
+		#userName {line-height:20px}
+		#gameField {width:800px;height:600px;line-height:1px}
+		#body {max-width:800px;margin:auto}
+		#log {width:100%;height:140px}
+		#message {width:100%;line-height:20px}
+	</style>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script src="fancywebsocket.js"></script>
+	<script>
+		var Server, p1Name, p2Name;
+	
+		function log( text ) {
+			$log = $('#log');
+			//Add text to log
+			$log.append(($log.val()?"\n":'')+text);
+			//Autoscroll
+			$log[0].scrollTop = $log[0].scrollHeight - $log[0].clientHeight;
+		}
+
+		function send( text ) {
+			Server.send( 'message', text );
+		}
+
+        function connect(){
+            log('Connecting...');
+			Server = new FancyWebSocket('ws://' + document.getElementById('ip').value + ':' + document.getElementById('port').value);			
+
+			$('#message').keypress(function(e) {
+				if ( e.keyCode == 13 && this.value ) {
+				
+					//if the user types #start, send server code to start the game!
+					if (this.value == "#start" || this.value == "#Start")
+					{
+						//clear the chat bar after command has been entered
+						$(this).val('');
+						
+						//Tell the server the player is ready to start
+						send("#serve#start");
+					}
+					else
+					{
+						log( 'You: ' + this.value );
+						send( this.value );
+
+						$(this).val('');
+					}
+				}
+			});
+			
+			//Let the user know we're connected
+			Server.bind('open', function() {
+                document.getElementById("cntBtn").disabled = true;
+				log( "Connected." );
+				send("#serve#UserID#" + document.getElementById('userName').value);
+			});
+			
+			//OH NOES! Disconnection occurred.
+			Server.bind('close', function( data ) {
+                document.getElementById("cntBtn").disabled = false;
+				log( "Disconnected." );
+			});
+
+			//Log any messages sent from server
+			Server.bind('message', function( payload ) {
+			//where I parse server messages
+				
+				//server messages are in format #server#p1(yPos, score, hits)#ball(xPos,yPos)#mins(time)#secs(time)#msecs(time)
+				if (payload.substr(0,7) == "#server")
+				{
+					//collect all the data after the #server tag
+					var data = payload.substr(7);
+					//separate data by #tags
+					data = data.split("#");
+					//trim extra "" empty space in the array
+					data.shift();
+					
+					//captures the p1(yPos,score,hits) data
+					var p1Data = data.shift();
+					//captures the p2(yPos,score,hits) data
+					var p2Data = data.shift();
+					//captures the ball(xPos,yPos) data
+					var ballData = data.shift();
+					
+					//parse through player1 data
+					//trim 'p1(' and ')'
+					p1Data = p1Data.slice(3, p1Data.length - 1);
+					//separate elements into array
+					p1Data = p1Data.split(",");
+
+					//capture individual data
+					var p1YPos = p1Data.shift();
+					var p1Score = p1Data.shift();
+					var p1Hits = p1Data.shift();
+					
+					//parse through player2 data
+					//trim 'p2(' and ')'
+					p2Data = p2Data.slice(3, p2Data.length - 1);
+					//separate elements into array
+					p2Data = p2Data.split(",");
+
+					//capture individual data
+					var p2YPos = p2Data.shift();
+					var p2Score = p2Data.shift();
+					var p2Hits = p2Data.shift();
+					
+					//parse through ball data
+					//trim 'ball(' and ')'
+					ballData = ballData.slice(5, ballData.length -1);
+					//separate elements into array
+					ballData = ballData.split(",");
+
+					//capture individual data
+					var ballXPos = ballData.shift();
+					var ballYPos = ballData.shift();
+					
+					//draw!!!
+					redraw(p1YPos,p1Score,p1Hits,p2YPos,p2Score,p2Hits,ballXPos,ballYPos);
+					
+				} //a separate flow to capture the player names
+				else if (payload.substr(0,10) == "#playerIDs")
+				{
+					//collect all the data after the #playerIDs tag
+					var data = payload.substr(10);
+					//separate data by #tags
+					data = data.split("#");
+					//trim extra "" empty space in the array
+					data.shift();
+					
+					//captures the p1(yPos,score,hits) data
+					p1Name = data.shift();
+					//captures the p2(yPos,score,hits) data
+					p2Name = data.shift();
+				}
+				else if (payload.substr(0,6) == "#timer")
+				{
+					//collect all the data after the #timer tag
+					var serverTimeStamp = payload.substr(6);
+					//refresh our date object
+					var date = new Date();
+					//collect our current milliseconds
+					var localTimeStamp = date.getMilliseconds();
+					//calculate the difference
+					var difference = localTimeStamp - serverTimeStamp;
+					//calculate the latency
+					if (difference < 0)
+					{
+						difference = difference + 1000;
+					}
+					//draw the ping
+					redrawPing(difference);
+				}
+				else {log( payload );}				
+			});
+			//send("#serve#UserID#" + document.getElementById('userName').value);
+			Server.connect();
+        }
+		
+		//our custom event handler for keyboard input
+		window.onkeydown = function(e){
+			if (e.keyCode == 38) //if player holds up arrow, tell server to move paddle up
+			{
+				send("#serve#paddleUp");
+			}
+			else if (e.keyCode == 40) //if player holds down arrow, tell server to move paddle down
+			{
+				send("#serve#paddleDown");
+			} //if user holds
+			else if (e.keyCode == 9) //if player holds tab, display scoreboard
+			{
+			}
+		};
+
+	</script>
+</head>
+
+<body>
+	<div id='body'>
+		<p id="userPing">Your Ping is: 0 ms</p>
+        Server ip: <input type='text' id='ip' name='ip'>
+        Server port: <input type='text' id='port' name='port'>
+		UserID: <input type='text' id='userName' name='userName'>
+        <button type="button" id='cntBtn' onclick="connect();">Connect</button>
+		<canvas id="gameField" width="800" height="600" style="border:1px solid #000000";></canvas>
+		<textarea id='log' name='log' readonly='readonly'></textarea><br/>
+		<input type='text' id='message' name='message' />
+	</div>
+	<script>
+		//initialization + initial draw
+		var myCanvas = document.getElementById("gameField").getContext("2d");
+		
+		//initial hits/score draw
+		myCanvas.font = "30px Arial";
+		myCanvas.fillText("Player1 Hits: 0 Score: 0",10,50);
+		myCanvas.fillText("Player2 Hits: 0 Score: 0",430,50);
+		
+		//initial ball draw
+		myCanvas.beginPath();
+		myCanvas.arc(392,292,8,0,2*Math.PI);
+		myCanvas.stroke();
+		
+		//initial paddle1 draw
+		myCanvas.beginPath();
+		myCanvas.rect(30,250,20,100);
+		myCanvas.stroke();
+		
+		//initial paddle2 draw
+		myCanvas.beginPath();
+		myCanvas.rect(750,250,20,100);
+		myCanvas.stroke();
+
+		function redraw(p1YPos,p1Score,p1Hits,p2YPos,p2Score,p2Hits,ballXPos,ballYPos)
+		{
+			myCanvas.clearRect(0, 0, myCanvas.canvas.width, myCanvas.canvas.height);
+			
+			//hits draw
+			myCanvas.font = "30px Arial";
+			myCanvas.fillText(p1Name + " Hits: " + p1Hits + " Score: " + p1Score,10,50);
+			myCanvas.fillText(p2Name + " Hits: " + p2Hits + " Score: " + p2Score,430,50);
+			
+			//ball draw
+			myCanvas.beginPath();
+			myCanvas.arc(ballXPos,ballYPos,8,0,2*Math.PI);
+			myCanvas.stroke();
+			
+			//paddle1 draw
+			myCanvas.beginPath();
+			myCanvas.rect(30,p1YPos,20,100);
+			myCanvas.stroke();
+			
+			//paddle2 draw
+			myCanvas.beginPath();
+			myCanvas.rect(750,p2YPos,20,100);
+			myCanvas.stroke();
+		}
+		
+		function redrawPing(myPing)
+		{			
+			//'your ping' draw
+			document.getElementById("userPing").innerHTML = "Your Ping is: " + myPing + " ms";
+		}
+	</script>
+</body>
+
+</html>

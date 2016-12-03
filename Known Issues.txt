@@ -1,0 +1,21 @@
+Known Bugs:
+1) If there is a lurker, and one of the players leaves. The server will crash if the lurker tries to talk.
+2) There is a slight delay between paddle movement and arrow pressing.
+
+New Bugs (3/1/2015):
+1) The introduction of artificial latency has introduced a bug where the countdown between rounds is broadcast to the clients
+all at once instead of in 1 second intervals. Due to the nature of the artificial latency, this is only temporary and will not
+exist once the artificial latency is removed, as such, this is not a true bug, but a psuedo-bug and not worthy of 'fixing' since
+it would negatively impact the program's -actual- functionality when not using artificial latency.
+2) The artificial latency causes an occassional server crash when a player leaves. Similar to above this is only a psuedo-bug
+and not worthy of fixing, since it will no longer exist once we move on to the next milestone and remove artificial latency.
+
+3/3/2015:
+No newissues. Resolved compiler warnings. Compiles 100% clean now.
+
+3/9/2015:
+Bug Fixes:
+-Fixed an issue where game start countdown was preventing input for the duration
+-Fixed an issue where player paddle input was being buffered before hte game started
+-Fixed an issue where the #start command would be delayed by 3 seconds when entered by a player
+-Fixed a crash caused when a player leaves after having connected to the servers
