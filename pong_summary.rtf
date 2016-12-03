@@ -1,0 +1,33 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat{\fonttbl{\f0\fnil\fcharset0 Calibri;}}
+{\*\generator Riched20 10.0.9926}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\qr\f0\fs22\lang9 Devon Gunn\par
+
+\pard\sa200\sl276\slmult1\qc\b Summary\b0\par
+
+\pard\sa200\sl276\slmult1\i Overview:\i0\par
+-Client and Server roles: The server is in complete control of all logic processing, and holds the clients as slaves. The clients capture and parse certain inputs, sending them to the server. The clients are otherwise 'dumb', and merely display the information sent to them from the server (after parsing of course). In a way, the clients are thin clients. When the server sends information to the clients, it is in the format of:\line\par
+For Data:\line #server#p1(\i yPos\i0 ,\i score\i0 ,\i numconsecutivehits\i0 )#p2(\i yPos\i0 ,\i score\i0 ,\i numconsecutivehits\i0 )\par
+For Timestamp exchange with client:\par
+#timer\i xxx\i0\par
+where \i xxx\i0  is the current milliseconds. I don't bother having functionality for ms over 999 because if you have a MS over 150 you probably shouldn't be playing. (sorry laggers :P)\par
+When the client sends data back to the server it's in the format:\par
+#serve\i xxxxxxxxx\i0\par
+where xxxxxxxxx is any number of various commands, anywhere from sending the messages the players are typing back to the server, to telling the server which commands to execute, such as starting, moving a paddle up or down, quitting the game, or sending the player IDs.\par
+The server communicates with the clients every 7-34 milliseconds, depending the current setting. I've experimented with 30, 60, and 120 'FPS', where I've matched the updates to the framerate that I want the game to render at. Currently the server is set to send updates at a rate of 60 'fps', since this is also the rate at which most monitors render information, thus (theoretically) performing a sort of V-sync.\par
+\par
+\i Latency\i0 :\par
+I implemented the artificial latency completely server-side. To simulate incoming latency, incoming packets are queued into a buffer with a random latency associated. Each frame the queue is iterated through, and messages which have been sufficiently delayed are passed to the incoming message handlers, where they are timestamp checked and processed.\par
+For outgoing messages, it's the same thing but in reverse.\par
+The effects of adding the latency was that there is a slight delay between when you send a message and the other players receive, and more importantly, that with it's introduction, edge cases where the paddle just barely hits the ball on the player's screen cause the paddle to miss on the server. The player would see the ball move through his paddle as a result.\par
+For my mitigation mechanism I crafted an algorithm (one that happened to bebasically the same technique that Blizzard uses for World of Warcraft in relation to Area of Effect abilities) where if the player's paddle is moving, there is an invisible extension to the paddle on the server side (not visible to the players) based off the latency of the player. The effect of this is that from the player's perspective there is no latency.\par
+Since for this project we were instructed to use artificial latency, and my artificial latency mechanism averages to 10-25 ms, I tuned the compensation for 25-30 ms. In a realistic setting where the latency was real, the compensation would dynamically alter itself based on the most recent average of the player's ping.\par
+\par
+\i Extra Features\i0 :\par
+I included the chat room from the chatroom demo. It's fully functional. You can have two players, and multiple spectators connected to the server at once. Players and Spectators are appropriately tagged when they chat with their status as a player or lurker, and their user name.\par
+\par
+\i Team Members & Participation\i0 :\par
+Devon Gunn\par
+-I soloed this project. As a result I didn't have time to implement 'extra features' or fancy graphics. I had to scope my project and direct myself to hitting the requirements for each milestone. Being fancy meant being late. I only did what needed to be done (and included the chat room :P).\par
+As of the writing of this document I have worked on this project for over 72 hours.\par
+\par
+}
